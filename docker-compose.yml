@@ -1,0 +1,57 @@
+services:
+    # image project
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        restart: unless-stopped
+        working_dir: /var/www/
+        volumes:
+            - ./:/var/www
+        depends_on:
+            - db
+            - redis
+        networks:
+            - laravel
+
+    # nginx
+    nginx:
+        image: nginx:alpine
+        restart: unless-stopped
+        ports:
+            - "8989:80"
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx/:/etc/nginx/conf.d/
+        networks:
+            - laravel
+
+    # db postgresql
+    db:
+        image: postgres:16
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: products_parser
+            POSTGRES_USER: root
+            POSTGRES_PASSWORD: password
+        volumes:
+            - ./.docker/postgres/dbdata:/var/lib/postgresql/data
+        ports:
+            - "5432:5432"
+        networks:
+            - laravel
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U username -d products_parser"]
+            interval: 10s
+            retries: 5
+            timeout: 5s
+
+    # redis
+    redis:
+        image: redis:latest
+        networks:
+            - laravel
+
+networks:
+    laravel:
+        driver: bridge
