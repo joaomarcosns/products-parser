@@ -47,4 +47,9 @@ class Product extends Model
             'status' => ProductStatusEnum::class,
         ];
     }
+
+    public function getRouteKeyName()
+    {
+        return 'code';
+    }
 }

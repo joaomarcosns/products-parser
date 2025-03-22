@@ -22,15 +22,18 @@ class ProductsController extends Controller
         ]);
     }
 
-    /** Store a newly created resource in storage. */
-    public function store(StoreProductsRequest $request) {}
-
     /** Display the specified resource. */
-    public function show(Product $products) {}
+    public function show(Product $product) {
+
+        return response()->json([
+            'message' => 'Product found',
+            'data' => $product
+        ]);
+    }
 
     /** Update the specified resource in storage. */
-    public function update(UpdateProductsRequest $request, Product $products) {}
+    public function update(UpdateProductsRequest $request, Product $product) {}
 
     /** Remove the specified resource from storage. */
-    public function destroy(Product $products) {}
+    public function destroy(Product $product) {}
 }
