@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Enums\ProductStatusEnum;
@@ -29,9 +31,7 @@ class ImportFoodData extends Command
      */
     protected $description = 'Importa dados do Open Food Facts diariamente';
 
-    /**
-     * Execute the console command.
-     */
+    /** Execute the console command. */
     public function handle()
     {
         $this->info('🔄 Iniciando importação de produtos...');
@@ -40,16 +40,17 @@ class ImportFoodData extends Command
         $tempTable = $this->tableTemp();
 
         // URL base para os arquivos
-        $baseUrl = "https://challenges.coode.sh/food/data/json/";
+        $baseUrl = 'https://challenges.coode.sh/food/data/json/';
 
         // Collection
         $productsCollect = collect();
 
         // Obtém a lista de arquivos do index.txt
-        $indexResponse = Http::get($baseUrl . "index.txt");
+        $indexResponse = Http::get($baseUrl . 'index.txt');
 
-        if (!$indexResponse->successful()) {
+        if ( ! $indexResponse->successful()) {
             $this->error('❌ Falha ao obter a lista de arquivos!');
+
             return;
         }
 
@@ -60,8 +61,10 @@ class ImportFoodData extends Command
 
             // Baixa o arquivo .gz
             $fileResponse = Http::get($baseUrl . $file);
-            if (!$fileResponse->successful()) {
+
+            if ( ! $fileResponse->successful()) {
                 $this->error("❌ Falha ao baixar {$file}");
+
                 continue;
             }
 
@@ -79,17 +82,17 @@ class ImportFoodData extends Command
             // Remove os arquivos temporários
             Storage::disk('public')->delete([
                 "temp/{$file}",
-                "temp/" . basename($jsonPath)
+                'temp/' . basename($jsonPath),
             ]);
         }
 
         // Cria o arquivo CSV
-        $this->info("📝 Criando arquivo CSV...");
+        $this->info('📝 Criando arquivo CSV...');
         $this->generateCsv($productsCollect, $tempTable);
 
-        $this->info("🔄 Sincronizando dados...");
+        $this->info('🔄 Sincronizando dados...');
         $this->sync($tempTable);
-        $this->info("✅ Importação concluída!");
+        $this->info('✅ Importação concluída!');
     }
 
     private function tableTemp()
@@ -132,7 +135,7 @@ class ImportFoodData extends Command
         $file = gzopen($gzFile, 'rb');
         $out = fopen($outFile, 'wb');
 
-        while (!gzeof($file)) {
+        while ( ! gzeof($file)) {
             fwrite($out, gzread($file, $bufferSize));
         }
 
@@ -143,21 +146,24 @@ class ImportFoodData extends Command
     private function processJsonFile($productsCollect, $jsonPath, $fileName)
     {
         // $file = fopen('/var/www/storage/app/public/temp/products_01.json', 'r');
-        $file =  fopen($jsonPath, 'r');
+        $file = fopen($jsonPath, 'r');
+
         // Verifica se o arquivo foi aberto com sucesso
-        if (!$file) {
+        if ( ! $file) {
             $this->error("❌ Não foi possível abrir o arquivo {$fileName}.");
+
             return;
         }
 
         $lineCount = 0;
+
         while (($line = fgets($file)) !== false && $lineCount < 100) {
             $data = json_decode($line, true);
             $productsCollect->push([
                 'code' => trim($data['code'], '"'),
                 'status' => ProductStatusEnum::DRAFT->value,
-                'url' =>  $this->nullable($data['url']),
-                'creator' =>  $this->nullable($data['creator']),
+                'url' => $this->nullable($data['url']),
+                'creator' => $this->nullable($data['creator']),
                 'created_t' => $this->nullable($data['created_t']),
                 'last_modified_t' => $this->nullable($data['last_modified_t']),
                 'product_name' => $this->nullable($data['product_name']),
@@ -210,7 +216,7 @@ class ImportFoodData extends Command
             'nutriscore_score',
             'nutriscore_grade',
             'main_category',
-            'image_url'
+            'image_url',
         ];
 
         $this->copy(
@@ -220,10 +226,8 @@ class ImportFoodData extends Command
             name: $tempTable
         );
 
-        $this->info("✅ Dados copiados com sucesso!");
+        $this->info('✅ Dados copiados com sucesso!');
     }
-
-
 
     private static function createFile($header, array $dataModel, $name)
     {
@@ -236,10 +240,10 @@ class ImportFoodData extends Command
 
     private function copy($csv, $output, $tempTable, $name)
     {
-        $begin     = now();
-        $file      = storage_path("app/public/$name.csv");
+        $begin = now();
+        $file = storage_path("app/public/$name.csv");
         $file_temp = storage_path("app/public/{$name}_temp.csv");
-        $csv       = Reader::createFromPath($file, 'r');
+        $csv = Reader::createFromPath($file, 'r');
         $csv->setHeaderOffset(0);
         $csv->setDelimiter(';');
         $header = implode(',', $csv->getHeader());
@@ -250,9 +254,9 @@ class ImportFoodData extends Command
         $connectionString = sprintf(
             '-U %s -h %s -d %s -p %s -c',
             env('DB_USERNAME') ?? config('database.connections.pgsql.username'),
-            env('DB_HOST')     ?? config('database.connections.pgsql.host'),
+            env('DB_HOST') ?? config('database.connections.pgsql.host'),
             env('DB_DATABASE') ?? config('database.connections.pgsql.database'),
-            env('DB_PORT')     ?? config('database.connections.pgsql.port'),
+            env('DB_PORT') ?? config('database.connections.pgsql.port'),
         );
 
         $execString = sprintf(
@@ -272,7 +276,7 @@ class ImportFoodData extends Command
 
     private function nullable($value)
     {
-        return !empty($value) ? $value : null;
+        return ! empty($value) ? $value : null;
     }
 
     private function sync($tableName)
