@@ -18,4 +18,13 @@ enum ProductStatusEnum: string
             self::PUBLISHED => 'Published',
         };
     }
+
+    public function value(): string
+    {
+        return match ($this) {
+            self::DRAFT => 'draft',
+            self::TRASH => 'trash',
+            self::PUBLISHED => 'published',
+        };
+    }
 }
