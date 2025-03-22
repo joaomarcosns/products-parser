@@ -23,7 +23,8 @@ class ProductsController extends Controller
     }
 
     /** Display the specified resource. */
-    public function show(Product $product) {
+    public function show(Product $product)
+    {
 
         return response()->json([
             'message' => 'Product found',
@@ -32,7 +33,16 @@ class ProductsController extends Controller
     }
 
     /** Update the specified resource in storage. */
-    public function update(UpdateProductsRequest $request, Product $product) {}
+    public function update(UpdateProductsRequest $request, Product $product)
+    {
+
+        $product->update($request->validated());
+
+        return response()->json([
+            'message' => 'Product updated',
+            'data' => $product
+        ]);
+    }
 
     /** Remove the specified resource from storage. */
     public function destroy(Product $product) {}
