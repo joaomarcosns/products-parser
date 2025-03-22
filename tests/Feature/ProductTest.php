@@ -21,7 +21,7 @@ describe('Product Feature Tests', function () {
     it('returns a paginated list of products', function () {
         $response = $this->getJson(route('products.index'));
         $response->assertStatus(200);
-        
+
         $response->assertJsonStructure([
             'message',
             'data' => [
@@ -63,5 +63,21 @@ describe('Product Feature Tests', function () {
         ]);
 
         $response->assertJson(['message' => 'Products list']);
+    });
+
+    it('returns a product by its code', function () {
+        $response = $this->getJson(route('products.show', ['product' => $this->product->code]));
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['message', 'data'])
+            ->assertJson([
+                'message' => 'Product found',
+            ])
+            ->assertJsonPath('data.id', $this->product->id);
+    });
+
+    it('returns 404 when product code does not exist', function () {
+        $response = $this->getJson(route('products.show', ['product' => 'NON-EXISTENT-CODE']));
+        $response->assertStatus(404);
     });
 });
