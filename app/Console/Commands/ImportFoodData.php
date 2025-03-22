@@ -2,9 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\ProductStatusEnum;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -74,14 +76,54 @@ class ImportFoodData extends Command
             // // Processa os dados JSON em lote
             $this->processJsonFile($productsCollect, $jsonPath, $file);
 
-            // // Remove os arquivos temporários
+            // Remove os arquivos temporários
             Storage::disk('public')->delete([
                 "temp/{$file}",
-                // "temp/" . basename($jsonPath)
+                "temp/" . basename($jsonPath)
             ]);
         }
 
+        // Cria o arquivo CSV
+        $this->info("📝 Criando arquivo CSV...");
+        $this->generateCsv($productsCollect, $tempTable);
+
+        $this->info("🔄 Sincronizando dados...");
+        $this->sync($tempTable);
         $this->info("✅ Importação concluída!");
+    }
+
+    private function tableTemp()
+    {
+        $table = 'products_temp';
+        Schema::dropIfExists($table);
+        Schema::create($table, function (Blueprint $table) {
+            $table->id();
+            $table->string('code');
+            $table->string('status')->nullable();
+            $table->integer('imported_t')->default(Carbon::now()->timestamp);
+            $table->text('url')->nullable();
+            $table->string('creator')->nullable();
+            $table->string('created_t')->nullable();
+            $table->string('last_modified_t')->nullable();
+            $table->string('product_name')->nullable();
+            $table->string('quantity')->nullable();
+            $table->string('brands')->nullable();
+            $table->text('categories')->nullable();
+            $table->string('labels')->nullable();
+            $table->string('cities')->nullable();
+            $table->string('purchase_places')->nullable();
+            $table->string('stores')->nullable();
+            $table->text('ingredients_text')->nullable();
+            $table->string('traces')->nullable();
+            $table->string('serving_size')->nullable();
+            $table->string('serving_quantity')->nullable();
+            $table->string('nutriscore_score')->nullable();
+            $table->string('nutriscore_grade')->nullable();
+            $table->string('main_category')->nullable();
+            $table->text('image_url')->nullable();
+        });
+
+        return $table;
     }
 
     private function gunzipFile($gzFile, $outFile)
@@ -100,99 +142,103 @@ class ImportFoodData extends Command
 
     private function processJsonFile($productsCollect, $jsonPath, $fileName)
     {
-        // Abre o arquivo JSON
-        // dd($jsonPath);
-        $file = fopen('/var/www/storage/app/public/temp/products_01.json', 'r');
-        // $file =  fopen("temp/products.json", 'r');
+        // $file = fopen('/var/www/storage/app/public/temp/products_01.json', 'r');
+        $file =  fopen($jsonPath, 'r');
         // Verifica se o arquivo foi aberto com sucesso
         if (!$file) {
             $this->error("❌ Não foi possível abrir o arquivo {$fileName}.");
             return;
         }
 
-        // Lê todo o conteúdo do arquivo
-        $jsonContentCollection = collect();
         $lineCount = 0;
         while (($line = fgets($file)) !== false && $lineCount < 100) {
-            // $jsonContent .= $line;  // Concatenar cada linha
             $data = json_decode($line, true);
-            dd($data);
-            $lineCount++;  // Contar as linhas
+            $productsCollect->push([
+                'code' => trim($data['code'], '"'),
+                'status' => ProductStatusEnum::DRAFT->value,
+                'url' =>  $this->nullable($data['url']),
+                'creator' =>  $this->nullable($data['creator']),
+                'created_t' => $this->nullable($data['created_t']),
+                'last_modified_t' => $this->nullable($data['last_modified_t']),
+                'product_name' => $this->nullable($data['product_name']),
+                'quantity' => $this->nullable($data['quantity']),
+                'brands' => $this->nullable($data['brands']),
+                'categories' => $this->nullable($data['categories']),
+                'labels' => $this->nullable($data['labels']),
+                'cities' => $this->nullable($data['cities']),
+                'purchase_places' => $this->nullable($data['purchase_places']),
+                'stores' => $this->nullable($data['stores']),
+                'ingredients_text' => $this->nullable($data['ingredients_text']),
+                'traces' => $this->nullable($data['traces']),
+                'serving_size' => $this->nullable($data['serving_size']),
+                'serving_quantity' => $this->nullable($data['serving_quantity']),
+                'nutriscore_score' => $this->nullable($data['nutriscore_score']),
+                'nutriscore_grade' => $this->nullable($data['nutriscore_grade']),
+                'main_category' => $this->nullable($data['main_category']),
+                'image_url' => $this->nullable($data['image_url']),
+
+            ]);
+            $lineCount++;
         }
 
         fclose($file);
-        // Converte o conteúdo JSON em array
-        $products = [];
-
-        dd($products);
-
-        if (!$products) {
-            $this->error("❌ Falha ao processar {$fileName}");
-            return;
-        }
-
-        // Limita a 100 produtos
-        $limitedProducts = array_slice($products, 0, 100);
-
-        dd($limitedProducts);
-
-        // Adiciona os produtos ao collection
-        foreach ($limitedProducts as $product) {
-            dd($product);  // Exibe cada produto no dd (para depuração)
-            $productsCollect->push($product);
-        }
 
         $this->info("✅ {$fileName} importado com sucesso!");
     }
 
-
-    private function tableTemp()
+    private function generateCsv($productsCollect, $tempTable)
     {
-        Schema::dropIfExists('temp');
-        Schema::create('temp', function (Blueprint $table) {
-            $table->id();
-            $table->string('code');
-            $table->string('status');
-            $table->timestamp('imported_at')->default(now());
-            $table->string('url');
-            $table->string('creator');
-            $table->timestamp('created_at');
-            $table->timestamp('last_modified_at');
-            $table->string('product_name');
-            $table->string('quantity');
-            $table->string('brands');
-            $table->string('categories');
-            $table->string('labels');
-            $table->string('cities');
-            $table->string('purchase_places');
-            $table->string('stores');
-            $table->string('ingredients_text');
-            $table->string('traces');
-            $table->string('serving_size');
-            $table->string('serving_quantity');
-            $table->integer('nutriscore_score');
-            $table->string('nutriscore_grade');
-            $table->string('main_category');
-            $table->string('image_url');
-        });
+        $header = [
+            'code',
+            'status',
+            'url',
+            'creator',
+            'created_t',
+            'last_modified_t',
+            'product_name',
+            'quantity',
+            'brands',
+            'categories',
+            'labels',
+            'cities',
+            'purchase_places',
+            'stores',
+            'ingredients_text',
+            'traces',
+            'serving_size',
+            'serving_quantity',
+            'nutriscore_score',
+            'nutriscore_grade',
+            'main_category',
+            'image_url'
+        ];
 
-        return 'temp';
+        $this->copy(
+            csv: $this->createFile($header, $productsCollect->toArray(), $tempTable),
+            output: $this->output,
+            tempTable: $tempTable,
+            name: $tempTable
+        );
+
+        $this->info("✅ Dados copiados com sucesso!");
     }
 
-    public static function createFile($header, $networkId, array $dataModel, $name)
+
+
+    private static function createFile($header, array $dataModel, $name)
     {
-        Storage::disk('public')->put($networkId . "/$name.csv", '');
-        $csv = Writer::createFromPath(storage_path("app/public/$networkId/$name.csv"), 'w+');
+        Storage::disk('public')->put("$name.csv", '');
+        $csv = Writer::createFromPath(storage_path("app/public/$name.csv"), 'w+');
         $csv->setDelimiter(';');
         $csv->insertOne($header);
         $csv->insertAll($dataModel);
     }
 
-    public static function copy($network, $csv, $output, $temp_table, $name)
+    private function copy($csv, $output, $tempTable, $name)
     {
         $begin     = now();
-        $file      = storage_path("app/public/$network->id/$name.csv");
-        $file_temp = storage_path("app/public/$network->id/{$name}_temp.csv");
+        $file      = storage_path("app/public/$name.csv");
+        $file_temp = storage_path("app/public/{$name}_temp.csv");
         $csv       = Reader::createFromPath($file, 'r');
         $csv->setHeaderOffset(0);
         $csv->setDelimiter(';');
@@ -213,16 +259,135 @@ class ImportFoodData extends Command
             'PGPASSWORD=%s psql %s "\COPY \\"%s\\"(%s) FROM \'%s\' DELIMITER \';\' CSV HEADER"',
             env('DB_PASSWORD') ?? config('database.connections.pgsql.password'),
             $connectionString,
-            $temp_table,
+            $tempTable,
             $header,
             $file
         );
 
         shell_exec($execString);
 
-        if ($output) {
-            $executionTime = Carbon::now()->diffInMinutes($begin);
-            $output->info(sprintf('%s FIM DO COPY. TEMPO DE EXECUCAO: %d minutos', $network->name, $executionTime));
-        }
+        $executionTime = Carbon::now()->diffInMinutes($begin);
+        $output->info(sprintf('FIM DO COPY. TEMPO DE EXECUCAO: %d minutos', $executionTime));
+    }
+
+    private function nullable($value)
+    {
+        return !empty($value) ? $value : null;
+    }
+
+    private function sync($tableName)
+    {
+        $sql =
+        "WITH prod_temp AS (
+            SELECT DISTINCT ON (pt.code)
+                pt.code,
+                pt.status,
+                pt.imported_t,
+                pt.url,
+                pt.creator,
+                pt.created_t,
+                pt.last_modified_t,
+                pt.product_name,
+                pt.quantity,
+                pt.brands,
+                pt.categories,
+                pt.labels,
+                pt.cities,
+                pt.purchase_places,
+                pt.stores,
+                pt.ingredients_text,
+                pt.traces,
+                pt.serving_size,
+                pt.serving_quantity,
+                pt.nutriscore_score,
+                pt.nutriscore_grade,
+                pt.main_category,
+                pt.image_url,
+                NOW() AS created_at,
+                NOW() AS updated_at
+            FROM {$tableName} pt
+        )
+        INSERT INTO products (
+            code,
+            status,
+            imported_t,
+            url,
+            creator,
+            created_t,
+            last_modified_t,
+            product_name,
+            quantity,
+            brands,
+            categories,
+            labels,
+            cities,
+            purchase_places,
+            stores,
+            ingredients_text,
+            traces,
+            serving_size,
+            serving_quantity,
+            nutriscore_score,
+            nutriscore_grade,
+            main_category,
+            image_url,
+            created_at,
+            updated_at
+        )
+        SELECT
+            code,
+            status,
+            imported_t,
+            url,
+            creator,
+            created_t,
+            last_modified_t,
+            product_name,
+            quantity,
+            brands,
+            categories,
+            labels,
+            cities,
+            purchase_places,
+            stores,
+            ingredients_text,
+            traces,
+            serving_size,
+            serving_quantity,
+            nutriscore_score,
+            nutriscore_grade,
+            main_category,
+            image_url,
+            created_at,
+            updated_at
+        FROM prod_temp
+        ON CONFLICT (code)
+        DO UPDATE SET
+            imported_t = EXCLUDED.imported_t,
+            status = EXCLUDED.status,
+            url = EXCLUDED.url,
+            creator = EXCLUDED.creator,
+            created_t = EXCLUDED.created_t,
+            last_modified_t = EXCLUDED.last_modified_t,
+            product_name = EXCLUDED.product_name,
+            quantity = EXCLUDED.quantity,
+            brands = EXCLUDED.brands,
+            categories = EXCLUDED.categories,
+            labels = EXCLUDED.labels,
+            cities = EXCLUDED.cities,
+            purchase_places = EXCLUDED.purchase_places,
+            stores = EXCLUDED.stores,
+            ingredients_text = EXCLUDED.ingredients_text,
+            traces = EXCLUDED.traces,
+            serving_size = EXCLUDED.serving_size,
+            serving_quantity = EXCLUDED.serving_quantity,
+            nutriscore_score = EXCLUDED.nutriscore_score,
+            nutriscore_grade = EXCLUDED.nutriscore_grade,
+            main_category = EXCLUDED.main_category,
+            image_url = EXCLUDED.image_url,
+            updated_at = EXCLUDED.updated_at;
+    ";
+
+        DB::statement($sql);
     }
 }
