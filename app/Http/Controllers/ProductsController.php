@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\ProductStatusEnum;
 use App\Http\Requests\StoreProductsRequest;
 use App\Http\Requests\UpdateProductsRequest;
 use App\Models\Product;
@@ -45,5 +46,13 @@ class ProductsController extends Controller
     }
 
     /** Remove the specified resource from storage. */
-    public function destroy(Product $product) {}
+    public function destroy(Product $product)
+    {
+        $product->update(['status' => ProductStatusEnum::TRASH->value]);
+
+        return response()->json([
+            'message' => 'Product moved to trash',
+            'data' => $product
+        ]);
+    }
 }
