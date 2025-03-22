@@ -184,4 +184,21 @@ describe('Product Feature Tests', function () {
             ]);
         $this->assertDatabaseHas('products', array_merge(['id' => $this->product->id], $validData));
     });
+
+    it('successfully changes the product status to trash without deleting the product', function () {
+        $response = $this->deleteJson(route('products.destroy', ['product' => $this->product->code]));
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Product moved to trash',
+                'data' => [
+                    'id' => $this->product->id,
+                    'status' => ProductStatusEnum::TRASH->value,
+                ]
+            ]);
+
+        $this->product->refresh();
+
+        $this->assertEquals(ProductStatusEnum::TRASH->value, $this->product->status->value);
+    });
 });
