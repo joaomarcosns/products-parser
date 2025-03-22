@@ -6,7 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreProductsRequest;
 use App\Http\Requests\UpdateProductsRequest;
-use App\Models\Products;
+use App\Models\Product;
 
 class ProductsController extends Controller
 {
@@ -14,41 +14,23 @@ class ProductsController extends Controller
     public function index()
     {
 
-    }
+        $products = Product::paginate();
 
-    /** Show the form for creating a new resource. */
-    public function create()
-    {
-
+        return response()->json([
+            'message' => 'Products list',
+            'data' => $products
+        ]);
     }
 
     /** Store a newly created resource in storage. */
-    public function store(StoreProductsRequest $request)
-    {
-
-    }
+    public function store(StoreProductsRequest $request) {}
 
     /** Display the specified resource. */
-    public function show(Products $products)
-    {
-
-    }
-
-    /** Show the form for editing the specified resource. */
-    public function edit(Products $products)
-    {
-
-    }
+    public function show(Product $products) {}
 
     /** Update the specified resource in storage. */
-    public function update(UpdateProductsRequest $request, Products $products)
-    {
-
-    }
+    public function update(UpdateProductsRequest $request, Product $products) {}
 
     /** Remove the specified resource from storage. */
-    public function destroy(Products $products)
-    {
-
-    }
+    public function destroy(Product $products) {}
 }
