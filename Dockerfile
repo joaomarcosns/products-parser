@@ -3,15 +3,33 @@ FROM php:8.3-fpm
 ARG user=joao
 ARG uid=1000
 
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
+RUN apt clean && apt update \
+    && apt install -y --no-install-recommends \
+    software-properties-common \
+    locales \
+    openssh-client \
+    apt-utils \
+    libicu-dev \
+    g++ \
     libpng-dev \
-    libonig-dev \
     libxml2-dev \
+    libzip-dev \
+    libonig-dev \
+    libxslt-dev \
     zip \
     unzip \
-    libpq-dev
+    libpq-dev \
+    wget \
+    curl \
+    apt-transport-https \
+    lsb-release \
+    ca-certificates \
+    sshpass \
+    gpg-agent
+
+RUN bash -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+RUN apt update && apt install -y postgresql-client-16 postgresql-contrib-16
 
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
