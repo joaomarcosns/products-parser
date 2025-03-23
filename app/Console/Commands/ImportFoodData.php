@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Enums\ProductStatusEnum;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\ErrorReportNotification;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Database\Schema\Blueprint;
@@ -14,6 +16,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use League\Csv\Reader;
 use League\Csv\Writer;
+use Exception;
 
 class ImportFoodData extends Command
 {
@@ -36,63 +39,46 @@ class ImportFoodData extends Command
     {
         $this->info('🔄 Iniciando importação de produtos...');
 
-        // Cria a tabela temporária
-        $tempTable = $this->tableTemp();
+        // Erros
+        $errorLogPath = storage_path('app/public/error_log.json');
+        $errors = [];
 
-        // URL base para os arquivos
-        $baseUrl = 'https://challenges.coode.sh/food/data/json/';
+        try {
+            // Cria a tabela temporária
+            $tempTable = $this->tableTemp();
 
-        // Collection
-        $productsCollect = collect();
+            // URL base para os arquivos
+            $baseUrl = 'https://challenges.coode.sh/food/data/json/';
 
-        // Obtém a lista de arquivos do index.txt
-        $indexResponse = Http::get($baseUrl . 'index.txt');
+            // Collection
+            $productsCollect = collect();
 
-        if ( ! $indexResponse->successful()) {
-            $this->error('❌ Falha ao obter a lista de arquivos!');
+            // Obtém a lista de arquivos do index.txt
+            $indexResponse = Http::get($baseUrl . 'index.txt');
 
-            return;
-        }
-
-        $files = explode(PHP_EOL, trim($indexResponse->body()));
-
-        foreach ($files as $file) {
-            $this->info("📥 Baixando {$file}...");
-
-            // Baixa o arquivo .gz
-            $fileResponse = Http::get($baseUrl . $file);
-
-            if ( ! $fileResponse->successful()) {
-                $this->error("❌ Falha ao baixar {$file}");
-
-                continue;
+            throw new Exception('Falha ao obter a lista de arquivos!');
+            if (! $indexResponse->successful()) {
+                $this->error('❌ Falha ao obter a lista de arquivos!');
+                throw new Exception('Falha ao obter a lista de arquivos!');
             }
 
-            // Salva o arquivo .gz no diretório 'temp' dentro de 'storage/app'
-            $gzPath = storage_path('app/public/temp/' . $file);
-            Storage::disk('public')->put('temp/' . $file, $fileResponse->body());
+            $files = explode(PHP_EOL, trim($indexResponse->body()));
 
-            // // Descompacta o arquivo .gz
-            $jsonPath = str_replace('.gz', '', $gzPath);
-            $this->gunzipFile($gzPath, $jsonPath);
+            // Baixa e processa os arquivos
+            $this->downloadAndProcessFiles($files, $baseUrl, $productsCollect, $errors);
 
-            // // Processa os dados JSON em lote
-            $this->processJsonFile($productsCollect, $jsonPath, $file);
+            // Cria o arquivo CSV
+            $this->info('📝 Criando arquivo CSV...');
+            $this->generateCsv($productsCollect, $tempTable);
 
-            // Remove os arquivos temporários
-            Storage::disk('public')->delete([
-                "temp/{$file}",
-                'temp/' . basename($jsonPath),
-            ]);
+            $this->info('🔄 Sincronizando dados...');
+            $this->sync($tempTable);
+            $this->info('✅ Importação concluída!');
+        } catch (Exception $e) {
+            $this->error('❌ Ocorreu um erro na importação!');
+            $errors[] = $e->getMessage();
+            $this->logErrors($errors, $errorLogPath);
         }
-
-        // Cria o arquivo CSV
-        $this->info('📝 Criando arquivo CSV...');
-        $this->generateCsv($productsCollect, $tempTable);
-
-        $this->info('🔄 Sincronizando dados...');
-        $this->sync($tempTable);
-        $this->info('✅ Importação concluída!');
     }
 
     private function tableTemp()
@@ -129,13 +115,45 @@ class ImportFoodData extends Command
         return $table;
     }
 
+    private function downloadAndProcessFiles($files, $baseUrl, $productsCollect, $errors)
+    {
+        foreach ($files as $file) {
+            $this->info("📥 Baixando {$file}...");
+
+            // Baixa o arquivo .gz
+            $fileResponse = Http::get($baseUrl . $file);
+
+            if (! $fileResponse->successful()) {
+                $this->error("❌ Falha ao baixar {$file}");
+                $errors[] = "Falha ao baixar {$file}";
+                continue;
+            }
+
+            // Salva o arquivo .gz no diretório 'temp' dentro de 'storage/app'
+            $gzPath = storage_path('app/public/temp/' . $file);
+            Storage::disk('public')->put('temp/' . $file, $fileResponse->body());
+
+            // Descompacta o arquivo .gz
+            $jsonPath = str_replace('.gz', '', $gzPath);
+            $this->gunzipFile($gzPath, $jsonPath);
+
+            $this->processJsonFile($productsCollect, $jsonPath, $file);
+
+            // Remove os arquivos temporários
+            Storage::disk('public')->delete([
+                "temp/{$file}",
+                'temp/' . basename($jsonPath),
+            ]);
+        }
+    }
+
     private function gunzipFile($gzFile, $outFile)
     {
         $bufferSize = 4096;
         $file = gzopen($gzFile, 'rb');
         $out = fopen($outFile, 'wb');
 
-        while ( ! gzeof($file)) {
+        while (! gzeof($file)) {
             fwrite($out, gzread($file, $bufferSize));
         }
 
@@ -145,14 +163,10 @@ class ImportFoodData extends Command
 
     private function processJsonFile($productsCollect, $jsonPath, $fileName)
     {
-        // $file = fopen('/var/www/storage/app/public/temp/products_01.json', 'r');
         $file = fopen($jsonPath, 'r');
-
-        // Verifica se o arquivo foi aberto com sucesso
-        if ( ! $file) {
+        if (! $file) {
             $this->error("❌ Não foi possível abrir o arquivo {$fileName}.");
-
-            return;
+            throw new Exception('Não foi possível abrir o arquivo {$fileName}.');
         }
 
         $lineCount = 0;
@@ -282,7 +296,7 @@ class ImportFoodData extends Command
     private function sync($tableName)
     {
         $sql =
-        "WITH prod_temp AS (
+            "WITH prod_temp AS (
             SELECT DISTINCT ON (pt.code)
                 pt.code,
                 pt.status,
@@ -393,5 +407,15 @@ class ImportFoodData extends Command
     ";
 
         DB::statement($sql);
+    }
+
+    private function logErrors(array $errors, string $path)
+    {
+        $logData = ['errors' => $errors]; // Sempre sobrescreve os erros antigos
+
+        file_put_contents($path, json_encode($logData, JSON_PRETTY_PRINT));
+
+        // Enviar e-mail com o arquivo anexado
+        Notification::route('mail', 'seuemail@example.com')->notify(new ErrorReportNotification($path));
     }
 }
