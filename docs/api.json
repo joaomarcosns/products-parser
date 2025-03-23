@@ -1,0 +1,445 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API de Produtos",
+        "description": "Documentação da API para gerenciamento de produtos",
+        "contact": {
+            "email": "suporte@example.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8989/api/v1",
+            "description": "Servidor API"
+        }
+    ],
+    "paths": {
+        "/products": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Lista todos os produtos paginados",
+                "description": "Retorna a lista de produtos com paginação",
+                "operationId": "getProductsList",
+                "responses": {
+                    "200": {
+                        "description": "Lista de produtos retornada com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Products list"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Product"
+                                                    }
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 15
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 100
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/products/{product}": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Exibe um produto específico",
+                "description": "Retorna os detalhes de um produto com base no CÓDIGO fornecido",
+                "operationId": "getProductByCode",
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "path",
+                        "description": "CÓDIGO do produto",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Produto encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Product found"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Product"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Produto não encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Product not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Atualiza um produto",
+                "description": "Atualiza as informações de um produto existente com base no CÓDIGO fornecido",
+                "operationId": "updateProduct",
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status",
+                                    "product_name"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "draft",
+                                            "trash",
+                                            "published"
+                                        ],
+                                        "example": "published"
+                                    },
+                                    "url": {
+                                        "type": "string",
+                                        "format": "url",
+                                        "example": "https://example.com/product"
+                                    },
+                                    "creator": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "product_name": {
+                                        "type": "string",
+                                        "example": "Chocolate Bar"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "example": "200g"
+                                    },
+                                    "brands": {
+                                        "type": "string",
+                                        "example": "Nestle"
+                                    },
+                                    "categories": {
+                                        "type": "string",
+                                        "example": "Snacks, Chocolates"
+                                    },
+                                    "labels": {
+                                        "type": "string",
+                                        "example": "Gluten Free, Organic"
+                                    },
+                                    "cities": {
+                                        "type": "string",
+                                        "example": "São Paulo, Rio de Janeiro"
+                                    },
+                                    "purchase_places": {
+                                        "type": "string",
+                                        "example": "Supermarket"
+                                    },
+                                    "stores": {
+                                        "type": "string",
+                                        "example": "Carrefour, Walmart"
+                                    },
+                                    "ingredients_text": {
+                                        "type": "string",
+                                        "example": "Cocoa, Sugar, Milk"
+                                    },
+                                    "traces": {
+                                        "type": "string",
+                                        "example": "Nuts, Soy"
+                                    },
+                                    "serving_size": {
+                                        "type": "string",
+                                        "example": "50g"
+                                    },
+                                    "serving_quantity": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 50
+                                    },
+                                    "nutriscore_score": {
+                                        "type": "integer",
+                                        "example": 5
+                                    },
+                                    "nutriscore_grade": {
+                                        "type": "string",
+                                        "example": "B"
+                                    },
+                                    "main_category": {
+                                        "type": "string",
+                                        "example": "Snacks"
+                                    },
+                                    "image_url": {
+                                        "type": "string",
+                                        "format": "url",
+                                        "example": "https://example.com/image.jpg"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Produto atualizado com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Product updated"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Product"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Move um produto para a lixeira",
+                "description": "Move o produto especificado para a lixeira, alterando seu status para 'trash', com base no CÓDIGO fornecido",
+                "operationId": "destroyProduct",
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Produto movido para a lixeira com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Product moved to trash"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Product"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Produto não encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Product not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Product": {
+                "title": "Product",
+                "description": "Modelo de produto",
+                "required": [
+                    "code",
+                    "product_name",
+                    "status"
+                ],
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "example": "123456"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "draft",
+                            "trash",
+                            "published"
+                        ],
+                        "example": "draft"
+                    },
+                    "url": {
+                        "type": "string",
+                        "format": "url",
+                        "example": "https://example.com/product"
+                    },
+                    "creator": {
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "created_t": {
+                        "type": "integer",
+                        "example": 1617181723
+                    },
+                    "last_modified_t": {
+                        "type": "integer",
+                        "example": 1617181723
+                    },
+                    "product_name": {
+                        "type": "string",
+                        "example": "Chocolate Bar"
+                    },
+                    "quantity": {
+                        "type": "string",
+                        "example": "200g"
+                    },
+                    "brands": {
+                        "type": "string",
+                        "example": "Nestle"
+                    },
+                    "categories": {
+                        "type": "string",
+                        "example": "Snacks, Chocolates"
+                    },
+                    "labels": {
+                        "type": "string",
+                        "example": "Gluten Free, Organic"
+                    },
+                    "cities": {
+                        "type": "string",
+                        "example": "São Paulo, Rio de Janeiro"
+                    },
+                    "purchase_places": {
+                        "type": "string",
+                        "example": "Supermarket"
+                    },
+                    "stores": {
+                        "type": "string",
+                        "example": "Carrefour, Walmart"
+                    },
+                    "ingredients_text": {
+                        "type": "string",
+                        "example": "Cocoa, Sugar, Milk"
+                    },
+                    "traces": {
+                        "type": "string",
+                        "example": "Nuts, Soy"
+                    },
+                    "serving_size": {
+                        "type": "string",
+                        "example": "50g"
+                    },
+                    "serving_quantity": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 50
+                    },
+                    "nutriscore_score": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "nutriscore_grade": {
+                        "type": "string",
+                        "example": "B"
+                    },
+                    "main_category": {
+                        "type": "string",
+                        "example": "Snacks"
+                    },
+                    "image_url": {
+                        "type": "string",
+                        "format": "url",
+                        "example": "https://example.com/image.jpg"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Products",
+            "description": "Products"
+        }
+    ]
+}
