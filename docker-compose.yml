@@ -53,6 +53,16 @@ services:
         networks:
             - laravel
 
+    # mailhog
+    mailhog:
+        image: mailhog/mailhog
+        restart: unless-stopped
+        ports:
+            - "1025:1025" # Porta SMTP
+            - "8025:8025" # Interface Web
+        networks:
+            - laravel
+
 networks:
     laravel:
         driver: bridge
