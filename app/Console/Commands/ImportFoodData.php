@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Storage;
 use League\Csv\Reader;
 use League\Csv\Writer;
 use Exception;
+use Illuminate\Support\Facades\Redis;
 
 class ImportFoodData extends Command
 {
@@ -37,6 +38,7 @@ class ImportFoodData extends Command
     /** Execute the console command. */
     public function handle()
     {
+        Redis::set('last_import_job_timestamp', now()->toDateTimeString());
         $this->info('🔄 Iniciando importação de produtos...');
 
         // Erros
@@ -56,7 +58,6 @@ class ImportFoodData extends Command
             // Obtém a lista de arquivos do index.txt
             $indexResponse = Http::get($baseUrl . 'index.txt');
 
-            throw new Exception('Falha ao obter a lista de arquivos!');
             if (! $indexResponse->successful()) {
                 $this->error('❌ Falha ao obter a lista de arquivos!');
                 throw new Exception('Falha ao obter a lista de arquivos!');
