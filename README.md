@@ -114,6 +114,24 @@ composer install
 php artisan key:generate
 ```
 
+10. Rodar as migrations
+
+```sh
+php artisan migrate
+```
+
+11. Rodar comando para importar os produtos
+
+```sh
+php artisan products:import
+```
+
+12. Rodar fila para atualizar os produtos
+
+```sh
+php artisan queue:work
+```
+
 Acessar o projeto
 [http://localhost:8989](http://localhost:8989)
 
