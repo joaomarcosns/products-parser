@@ -52,6 +52,9 @@ A documentação das rotas está disponível com OpenAPI 3.0.0 no diretório `do
 ```dosini
 APP_NAME="Products Parser"
 APP_URL=http://localhost:8989
+L5_SWAGGER_CONST_HOST=http://localhost:8989/api/v1
+MAIL_FROM_REPORT='email@exemple.com'
+APP_VERSION=1.0.0
 
 DB_CONNECTION=pgsql
 DB_HOST=db
