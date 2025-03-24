@@ -57,8 +57,8 @@ class ImportFoodData extends Command
 
             // Obtém a lista de arquivos do index.txt
             $indexResponse = Http::get($baseUrl . 'index.txt');
-
-            if ( ! $indexResponse->successful()) {
+            throw new Exception('Falha ao obter a lista de arquivos!');
+            if (! $indexResponse->successful()) {
                 $this->error('❌ Falha ao obter a lista de arquivos!');
 
                 throw new Exception('Falha ao obter a lista de arquivos!');
@@ -125,7 +125,7 @@ class ImportFoodData extends Command
             // Baixa o arquivo .gz
             $fileResponse = Http::get($baseUrl . $file);
 
-            if ( ! $fileResponse->successful()) {
+            if (! $fileResponse->successful()) {
                 $this->error("❌ Falha ao baixar {$file}");
                 $errors[] = "Falha ao baixar {$file}";
 
@@ -156,7 +156,7 @@ class ImportFoodData extends Command
         $file = gzopen($gzFile, 'rb');
         $out = fopen($outFile, 'wb');
 
-        while ( ! gzeof($file)) {
+        while (! gzeof($file)) {
             fwrite($out, gzread($file, $bufferSize));
         }
 
@@ -168,7 +168,7 @@ class ImportFoodData extends Command
     {
         $file = fopen($jsonPath, 'r');
 
-        if ( ! $file) {
+        if (! $file) {
             $this->error("❌ Não foi possível abrir o arquivo {$fileName}.");
 
             throw new Exception('Não foi possível abrir o arquivo {$fileName}.');
@@ -420,7 +420,8 @@ class ImportFoodData extends Command
 
         file_put_contents($path, json_encode($logData, JSON_PRETTY_PRINT));
 
+        $email = config('app.mail_from_report');
         // Enviar e-mail com o arquivo anexado
-        Notification::route('mail', 'seuemail@example.com')->notify(new ErrorReportNotification($path));
+        Notification::route('mail', $email)->notify(new ErrorReportNotification($path));
     }
 }

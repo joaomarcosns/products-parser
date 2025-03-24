@@ -126,4 +126,6 @@ return [
 
     'version' => env('APP_VERSION', '1.0.0'),
 
+    'mail_from_report' => env('MAIL_FROM_REPORT', 'exemple@email.com'),
+
 ];
