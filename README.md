@@ -1,89 +1,119 @@
-# Backend Challenge 20230105
+# Products Parser
 
-## Introdução
+![GitHub](https://img.shields.io/github/license/joaomarcosns/products-parser)
+![GitHub last commit](https://img.shields.io/github/last-commit/joaomarcosns/products-parser)
+![GitHub issues](https://img.shields.io/github/issues/joaomarcosns/products-parser)
 
-Nesse desafio trabalharemos no desenvolvimento de uma REST API para utilizar os dados do projeto Open Food Facts, que é um banco de dados aberto com informação nutricional de diversos produtos alimentícios.
+## Pré-requisitos
 
-O projeto tem como objetivo dar suporte a equipe de nutricionistas da empresa Fitness Foods LC para que eles possam revisar de maneira rápida a informação nutricional dos alimentos que os usuários publicam pela aplicação móvel.
+- **Docker**: Para rodar o projeto em containers.
+- **Docker Compose**: Para orquestrar os containers.
 
-### Antes de começar
- 
-- O projeto deve utilizar a Linguagem específica na avaliação. Por exempo: Python, R, Scala e entre outras;
-- Considere como deadline da avaliação a partir do início do teste. Caso tenha sido convidado a realizar o teste e não seja possível concluir dentro deste período, avise a pessoa que o convidou para receber instruções sobre o que fazer.
-- Documentar todo o processo de investigação para o desenvolvimento da atividade (README.md no seu repositório); os resultados destas tarefas são tão importantes do que o seu processo de pensamento e decisões à medida que as completa, por isso tente documentar e apresentar os seus hipóteses e decisões na medida do possível.
+## Funcionalidades
 
-## O projeto
- 
-- Criar um banco de dados MongoDB usando Atlas: https://www.mongodb.com/cloud/atlas ou algum Banco de Dados SQL se não sentir confortável com NoSQL;
-- Criar uma REST API com as melhores práticas de desenvolvimento, Design Patterns, SOLID e DDD.
-- Integrar a API com o banco de dados criado para persistir os dados
-- Recomendável usar Drivers oficiais para integração com o DB
-- Desenvolver Testes Unitários
+Este projeto é uma API desenvolvida para realizar a extração de dados nutricionais a partir da URL `https://challenges.coode.sh/food/data/json/`. A API fornece funcionalidades para gerenciar produtos alimentícios na base de dados, incluindo operações de leitura, atualização e remoção.
 
-### Modelo de Dados:
+## Endpoints da API
 
-Para a definição do modelo, consultar o arquivo [products.json](./products.json) que foi exportado do Open Food Facts, um detalhe importante é que temos dois campos personalizados para poder fazer o controle interno do sistema e que deverão ser aplicados em todos os alimentos no momento da importação, os campos são:
+A documentação das rotas está disponível com OpenAPI 3.0.0 no diretório `docs`. Os arquivos de documentação estão disponíveis nos formatos JSON e YAML:
 
-- `imported_t`: campo do tipo Date com a dia e hora que foi importado;
-- `status`: campo do tipo Enum com os possíveis valores draft, trash e published;
+- [Documentação em JSON](docs/api.json)
+- [Documentação em YAML](docs/api.yml)
 
-### Sistema do CRON
+### Endpoints principais
 
-Para prosseguir com o desafio, precisaremos criar na API um sistema de atualização que vai importar os dados para a Base de Dados com a versão mais recente do [Open Food Facts](https://br.openfoodfacts.org/data) uma vez ao día. Adicionar aos arquivos de configuração o melhor horário para executar a importação.
+- `GET /`: Detalhes da API, conexão com a base de dados, horário da última execução do CRON, tempo online e uso de memória.
+- `PUT /products/:code`: Atualiza as informações de um produto específico.
+- `DELETE /products/:code`: Muda o status de um produto para `trash`.
+- `GET /products/:code`: Retorna informações de um produto específico.
+- `GET /products`: Lista todos os produtos com paginação.
 
-A lista de arquivos do Open Food, pode ser encontrada em: 
+## Como Rodar
 
-- https://challenges.coode.sh/food/data/json/index.txt
-- https://challenges.coode.sh/food/data/json/data-fields.txt
+1. Clone o repositório:
 
-Onde cada linha representa um arquivo que está disponível em https://challenges.coode.sh/food/data/json/{filename}.
+   ```bash
+   git clone https://github.com/joaomarcosns/products-parser.git
 
-É recomendável utilizar uma Collection secundária para controlar os históricos das importações e facilitar a validação durante a execução.
+2. Acesse o diretório do projeto:
 
-Ter em conta que:
+   ```bash
+   cd products-parser
+   ```
 
-- Todos os produtos deverão ter os campos personalizados `imported_t` e `status`.
-- Limitar a importação a somente 100 produtos de cada arquivo.
+3. Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis de ambiente:
 
-### A REST API
+   ```bash
+   cp .env.example .env
+   ```
 
-Na REST API teremos um CRUD com os seguintes endpoints:
+4. Atualize as variáveis de ambiente do arquivo .env
 
- - `GET /`: Detalhes da API, se conexão leitura e escritura com a base de dados está OK, horário da última vez que o CRON foi executado, tempo online e uso de memória.
- - `PUT /products/:code`: Será responsável por receber atualizações do Projeto Web
- - `DELETE /products/:code`: Mudar o status do produto para `trash`
- - `GET /products/:code`: Obter a informação somente de um produto da base de dados
- - `GET /products`: Listar todos os produtos da base de dados, adicionar sistema de paginação para não sobrecarregar o `REQUEST`.
+```dosini
+APP_NAME="Products Parser"
+APP_URL=http://localhost:8989
 
-## Extras
+DB_CONNECTION=pgsql
+DB_HOST=db
+DB_PORT=5432
+DB_DATABASE=products_parser
+DB_USERNAME=root
+DB_PASSWORD=password
 
-- **Diferencial 1** Configuração de um endpoint de busca com Elastic Search ou similares;
-- **Diferencial 2** Configurar Docker no Projeto para facilitar o Deploy da equipe de DevOps;
-- **Diferencial 3** Configurar um sistema de alerta se tem algum falho durante o Sync dos produtos;
-- **Diferencial 4** Descrever a documentação da API utilizando o conceito de Open API 3.0;
-- **Diferencial 5** Escrever Unit Tests para os endpoints  GET e PUT do CRUD;
-- **Diferencial 6** Escrever um esquema de segurança utilizando `API KEY` nos endpoints. Ref: https://learning.postman.com/docs/sending-requests/authorization/#api-key
+CACHE_DRIVER=redis
+QUEUE_CONNECTION=redis
+SESSION_DRIVER=redis
+
+REDIS_HOST=redis
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+L5_SWAGGER_GENERATE_ALWAYS=true
+L5_SWAGGER_API_VERSION=1.0.0
+L5_SWAGGER_TITLE="Products Parser API"
+L5_SWAGGER_DESCRIPTION="Documentação da API do Products Parser"
+L5_SWAGGER_GENERATE_YAML_COPY=true
 
 
+MAIL_MAILER=smtp
+MAIL_HOST=mailhog
+MAIL_PORT=1025
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_ENCRYPTION=null
+MAIL_FROM_ADDRESS="noreply@example.com"
+MAIL_FROM_NAME="${APP_NAME}"
+```
 
-## Readme do Repositório
+5. Inicialize o projeto:
 
-- Deve conter o título do projeto
-- Uma descrição sobre o projeto em frase
-- Deve conter uma lista com linguagem, framework e/ou tecnologias usadas
-- Como instalar e usar o projeto (instruções)
-- Não esqueça o [.gitignore](https://www.toptal.com/developers/gitignore)
-- Se está usando github pessoal, referencie que é um challenge by coodesh:  
+   ```bash
+   docker-compose up --build -d
+   ```
 
->  This is a challenge by [Coodesh](https://coodesh.com/)
+6. Acesse a documentação da API em `http://localhost:3000/docs`.
 
-## Finalização e Instruções para a Apresentação
+7. Acessar o container
 
-1. Adicione o link do repositório com a sua solução no teste
-2. Adicione o link da apresentação do seu projeto no README.md.
-3. Verifique se o Readme está bom e faça o commit final em seu repositório;
-4. Envie e aguarde as instruções para seguir. Sucesso e boa sorte. =)
+```sh
+docker-compose exec app bash
+```
 
-## Suporte
+8. Instalar as dependências do projeto
 
-Use a [nossa comunidade](https://discord.gg/rdXbEvjsWu) para tirar dúvidas sobre o processo ou envie uma mensagem diretamente a um especialista no chat da plataforma. 
+```sh
+composer install
+```
+
+9. Gerar a key do projeto Laravel
+
+```sh
+php artisan key:generate
+```
+
+Acessar o projeto
+[http://localhost:8989](http://localhost:8989)
+
+## Requisitos
+
+- [Requisitos](REQUIREMENTS.md)
