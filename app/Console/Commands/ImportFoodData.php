@@ -57,7 +57,6 @@ class ImportFoodData extends Command
 
             // Obtém a lista de arquivos do index.txt
             $indexResponse = Http::get($baseUrl . 'index.txt');
-            throw new Exception('Falha ao obter a lista de arquivos!');
             if (! $indexResponse->successful()) {
                 $this->error('❌ Falha ao obter a lista de arquivos!');
 
