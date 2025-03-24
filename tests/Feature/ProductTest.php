@@ -51,7 +51,7 @@ describe('Product Feature Tests', function () {
                         'nutriscore_grade',
                         'main_category',
                         'image_url',
-                    ]
+                    ],
                 ],
                 'links' => [
                     '*' => [
@@ -194,7 +194,7 @@ describe('Product Feature Tests', function () {
                 'data' => [
                     'id' => $this->product->id,
                     'status' => ProductStatusEnum::TRASH->value,
-                ]
+                ],
             ]);
 
         $this->product->refresh();

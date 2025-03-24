@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
@@ -13,28 +15,22 @@ class ErrorReportNotification extends Notification implements ShouldQueue
 
     protected string $filePath;
 
-    /**
-     * Create a new notification instance.
-     */
+    /** Create a new notification instance. */
     public function __construct(string $filePath)
     {
         $this->filePath = $filePath;
     }
 
-    /**
-     * Get the notification's delivery channels.
-     */
+    /** Get the notification's delivery channels. */
     public function via($notifiable): array
     {
         return ['mail'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
+    /** Get the mail representation of the notification. */
     public function toMail($notifiable): MailMessage
     {
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('📌 Relatório de Erros no Sistema')
             ->greeting('Olá,')
             ->line('Ocorreram erros no sistema. O arquivo de logs está anexado.')
